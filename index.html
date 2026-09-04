@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Launching SPMB SD Muhammadiyah Tanjung</title>
+  <title>Digital Hand Scanner Launching Ceremony</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Tone.js for procedural sci-fi sound effects -->
@@ -274,8 +274,34 @@
           <p class="font-hud text-base md:text-2xl text-amber-300 font-bold tracking-[0.25em] mb-4 glow-gold uppercase">
             TAHUN AJARAN 2027/2028
           </p>
+
+          <!-- Tombol Akses Pendaftaran SPMB Online Google Form -->
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSc9C_20eSxJhx515yQOrVmL5kWOorg04jNEKwaT6RfSHxxxmQ/viewform" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             class="group relative inline-flex items-center gap-3 px-8 py-4 mt-2 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-hud text-sm sm:text-base font-extrabold tracking-wider uppercase shadow-[0_0_35px_rgba(255,183,3,0.7)] hover:shadow-[0_0_55px_rgba(255,183,3,1)] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
+            <svg class="w-6 h-6 text-slate-950 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            <span>Daftar SPMB Online Sekarang</span>
+            <svg class="w-5 h-5 text-slate-950 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+            </svg>
+          </a>
         </div>
       </div>
+
+      <!-- Floating Action Button jika Video Custom sedang diputar -->
+      <a id="videoFloatingRegisterBtn" 
+         href="https://docs.google.com/forms/d/e/1FAIpQLSc9C_20eSxJhx515yQOrVmL5kWOorg04jNEKwaT6RfSHxxxmQ/viewform" 
+         target="_blank" 
+         rel="noopener noreferrer" 
+         class="absolute bottom-6 z-50 hidden inline-flex items-center gap-3 px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-hud text-sm font-extrabold tracking-wider uppercase shadow-[0_0_30px_rgba(255,183,3,0.8)] hover:scale-105 active:scale-95 transition-all cursor-pointer">
+        <span>Formulir Pendaftaran SPMB Online</span>
+        <svg class="w-5 h-5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+      </a>
     </div>
   </div>
 
@@ -393,36 +419,81 @@
       intervalId: null
     };
 
-    // Audio Engine using Tone.js (Sci-Fi Audio Synthesizer)
+    // Audio Engine using Tone.js (Pre-warmed & Zero-latency Synthesizers)
     const AudioEngine = {
       initialized: false,
       droneOsc: null,
       droneGain: null,
       beepSynth: null,
-      impactSynth: null,
+      countdownSynth: null,
+      countdownKick: null,
+      // Celebration Instruments (Pre-cached)
+      deepImpact: null,
+      bellSynth: null,
+      brassSynth: null,
+      popNoise: null,
+      sparkleSynth: null,
 
       init() {
         if (this.initialized) return;
         try {
-          // Continuous charging drone
+          // 1. Continuous charging drone
           this.droneGain = new Tone.Gain(0).toDestination();
           this.droneOsc = new Tone.Oscillator(110, "sawtooth").connect(this.droneGain).start();
 
-          // Biometric blip synth
+          // 2. Biometric blip synth
           this.beepSynth = new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "triangle" },
             envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.1 }
           }).toDestination();
           this.beepSynth.volume.value = -6;
 
-          // Bass impact sub-drop
-          this.impactSynth = new Tone.MembraneSynth({
-            pitchDecay: 0.08,
-            octaves: 6,
+          // 3. Countdown pre-warmed instruments
+          this.countdownSynth = new Tone.Synth({
             oscillator: { type: "sine" },
-            envelope: { attack: 0.001, decay: 1.2, sustain: 0.01, release: 1.4 }
+            envelope: { attack: 0.005, decay: 0.15, sustain: 0, release: 0.2 }
           }).toDestination();
-          this.impactSynth.volume.value = 5;
+
+          this.countdownKick = new Tone.MembraneSynth({
+            pitchDecay: 0.05,
+            octaves: 4,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.4 }
+          }).toDestination();
+          this.countdownKick.volume.value = 2;
+
+          // 4. Celebration Pre-cached instruments (menghilangkan lag/alokasi memori on-the-fly)
+          this.deepImpact = new Tone.MembraneSynth({
+            pitchDecay: 0.15,
+            octaves: 7,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.001, decay: 3.0, sustain: 0, release: 3.2 }
+          }).toDestination();
+          this.deepImpact.volume.value = 8;
+
+          this.bellSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.01, decay: 1.2, sustain: 0.1, release: 1.5 }
+          }).toDestination();
+          this.bellSynth.volume.value = 3;
+
+          this.brassSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 0.14, decay: 2.4, sustain: 0.65, release: 2.8 }
+          }).toDestination();
+          this.brassSynth.volume.value = 4;
+
+          this.popNoise = new Tone.NoiseSynth({
+            noise: { type: "pink" },
+            envelope: { attack: 0.002, decay: 0.22, sustain: 0 }
+          }).toDestination();
+          this.popNoise.volume.value = 2;
+
+          this.sparkleSynth = new Tone.Synth({
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.15 }
+          }).toDestination();
+          this.sparkleSynth.volume.value = -1;
 
           this.initialized = true;
         } catch (e) {
@@ -432,9 +503,12 @@
 
       ensureReady() {
         if (!this.initialized) this.init();
-        if (Tone.context.state !== 'running') {
-          Tone.start();
-        }
+        try {
+          if (Tone.context.state !== 'running') {
+            Tone.context.resume();
+            Tone.start();
+          }
+        } catch(e){}
       },
 
       playTouchBlip() {
@@ -450,7 +524,6 @@
         try {
           if (fraction > 0) {
             this.droneGain.gain.rampTo(Math.min(0.25, 0.05 + fraction * 0.2), 0.05);
-            // Pitch naik dari 110Hz ke 480Hz saat ditahan
             this.droneOsc.frequency.rampTo(110 + (fraction * 370), 0.05);
           } else {
             this.droneGain.gain.rampTo(0, 0.1);
@@ -465,101 +538,63 @@
         } catch(e){}
       },
 
-      // Efek ketukan countdown dari 10 ke 1
+      // Efek ketukan countdown dari 10 ke 1 tanpa alokasi baru
       playCountdownBeep(currentNum) {
         if (!state.soundEnabled) return;
         this.ensureReady();
         try {
-          const synth = new Tone.Synth().toDestination();
-          // Pitch semakin tinggi saat mendekati 1
           if (currentNum <= 3) {
-            synth.volume.value = 4;
-            synth.triggerAttackRelease("C6", "8n");
+            this.countdownSynth.volume.value = 5;
+            this.countdownSynth.triggerAttackRelease("C6", "16n");
           } else if (currentNum <= 5) {
-            synth.volume.value = 1;
-            synth.triggerAttackRelease("A5", "16n");
+            this.countdownSynth.volume.value = 2;
+            this.countdownSynth.triggerAttackRelease("A5", "16n");
           } else {
-            synth.volume.value = -2;
-            synth.triggerAttackRelease("E5", "16n");
+            this.countdownSynth.volume.value = -1;
+            this.countdownSynth.triggerAttackRelease("E5", "16n");
           }
-
-          // Tambahan sub beat ketukan drum
-          const kick = new Tone.MembraneSynth().toDestination();
-          kick.volume.value = 0;
-          kick.triggerAttackRelease("C2", "8n");
+          this.countdownKick.triggerAttackRelease("C2", "16n");
         } catch(e){}
       },
 
-      // Efek Suara Peresmian Megah, WOW & Bikin Terharu (Cinematic Fanfare + Shimmer + Grand Impact)
+      // Efek Suara Peresmian Megah, WOW & Bikin Terharu (Zero-lag dengan pre-created synths)
       playLaunchExplosion() {
         if (!state.soundEnabled) return;
         this.ensureReady();
         try {
           const now = Tone.now();
 
-          // 1. Cinematic Grand Sub-Boom (Dentuman Bass Panggung yang hangat & menggetarkan dada)
-          const deepImpact = new Tone.MembraneSynth({
-            pitchDecay: 0.15,
-            octaves: 7,
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.001, decay: 3.0, sustain: 0, release: 3.2 }
-          }).toDestination();
-          deepImpact.volume.value = 8;
-          deepImpact.triggerAttackRelease("B0", "1n", now);
+          // 1. Cinematic Grand Sub-Boom
+          this.deepImpact.triggerAttackRelease("B0", "1n", now);
 
-          // 2. Kilauan Kristal Stardust / Harp Shimmer Glissando (Sentuhan magis pembuka yang bikin merinding & haru)
-          const bellSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.01, decay: 1.2, sustain: 0.1, release: 1.5 }
-          }).toDestination();
-          bellSynth.volume.value = 3;
-
+          // 2. Kilauan Kristal Stardust Shimmer
           const shimmerNotes = [
             { note: "C5", delay: 0.00 },
-            { note: "E5", delay: 0.07 },
-            { note: "G5", delay: 0.14 },
-            { note: "B5", delay: 0.21 },
-            { note: "C6", delay: 0.28 },
-            { note: "D6", delay: 0.35 },
-            { note: "E6", delay: 0.42 },
-            { note: "G6", delay: 0.49 },
-            { note: "C7", delay: 0.58 },
-            { note: "E7", delay: 0.70 }
+            { note: "E5", delay: 0.06 },
+            { note: "G5", delay: 0.12 },
+            { note: "B5", delay: 0.18 },
+            { note: "C6", delay: 0.24 },
+            { note: "D6", delay: 0.30 },
+            { note: "E6", delay: 0.36 },
+            { note: "G6", delay: 0.44 },
+            { note: "C7", delay: 0.54 },
+            { note: "E7", delay: 0.66 }
           ];
           shimmerNotes.forEach(item => {
-            bellSynth.triggerAttackRelease(item.note, "4n", now + item.delay);
+            this.bellSynth.triggerAttackRelease(item.note, "4n", now + item.delay);
           });
 
-          // 3. Grand Orchestral Fanfare (Akord Kuningan Megah nan Agung - Heroik & Bangga)
-          const brassSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sawtooth" },
-            envelope: { attack: 0.14, decay: 2.4, sustain: 0.65, release: 2.8 }
-          }).toDestination();
-          brassSynth.volume.value = 3.5;
+          // 3. Grand Orchestral Fanfare (Megah & Bangga)
+          this.brassSynth.triggerAttackRelease(["C3", "G3", "C4", "E4", "G4", "D5"], "2n", now + 0.1);
+          this.brassSynth.triggerAttackRelease(["F2", "A3", "C4", "E4", "A4", "C5"], "2n", now + 1.2);
+          this.brassSynth.triggerAttackRelease(["G2", "D3", "G3", "B3", "D4", "G5"], "1n", now + 2.3);
 
-          // Akord 1: C Major 9 (Megah & Khidmat)
-          brassSynth.triggerAttackRelease(["C3", "G3", "C4", "E4", "G4", "D5"], "2n", now + 0.1);
-          // Akord 2: F Major 7 / C (Mengalir Haru & Menggugah Semangat)
-          brassSynth.triggerAttackRelease(["F2", "A3", "C4", "E4", "A4", "C5"], "2n", now + 1.2);
-          // Akord 3: G Sus4 ke G Triumphant (Puncak Sukacita Peresmian)
-          brassSynth.triggerAttackRelease(["G2", "D3", "G3", "B3", "D4", "G5"], "1n", now + 2.3);
-
-          // 4. Suara Letupan Kembang Api Panggung Bertubi-tubi (Festive Pyro & Golden Sparkles)
-          const popNoise = new Tone.NoiseSynth({
-            noise: { type: "pink" },
-            envelope: { attack: 0.002, decay: 0.25, sustain: 0 }
-          }).toDestination();
-          popNoise.volume.value = 1.5;
-
+          // 4. Kembang Api Panggung Bertubi-tubi
           [0.35, 0.7, 1.05, 1.4, 1.8, 2.2, 2.6].forEach((timeOffset, idx) => {
-            setTimeout(() => {
-              try {
-                popNoise.triggerAttackRelease("16n", Tone.now());
-                const sparkBell = new Tone.Synth().toDestination();
-                sparkBell.volume.value = -3;
-                sparkBell.triggerAttackRelease(idx % 2 === 0 ? "E6" : "G6", "32n");
-              } catch(e){}
-            }, timeOffset * 1000);
+            try {
+              this.popNoise.triggerAttackRelease("16n", now + timeOffset);
+              this.sparkleSynth.triggerAttackRelease(idx % 2 === 0 ? "E6" : "G6", "32n", now + timeOffset + 0.02);
+            } catch(e){}
           });
 
         } catch(e){
@@ -883,6 +918,8 @@
     function executeFinalLaunch() {
       state.isLaunched = true;
 
+      // Pastikan Audio Context aktif seketika
+      AudioEngine.ensureReady();
       // Suara peresmian megah, WOW & bikin terharu
       AudioEngine.playLaunchExplosion();
 
@@ -909,6 +946,7 @@
       const videoModal = document.getElementById('videoModal');
       const launchVideo = document.getElementById('launchVideo');
       const fallbackAnim = document.getElementById('fallbackAnimation');
+      const floatingRegisterBtn = document.getElementById('videoFloatingRegisterBtn');
 
       videoModal.classList.remove('hidden');
 
@@ -917,6 +955,7 @@
       if (videoSource) {
         launchVideo.classList.remove('hidden');
         fallbackAnim.classList.add('hidden');
+        floatingRegisterBtn.classList.remove('hidden');
         launchVideo.src = videoSource;
         launchVideo.currentTime = 0;
         
@@ -924,11 +963,13 @@
         if (playPromise !== undefined) {
           playPromise.catch(err => {
             console.warn("Autoplay terhalang, beralih ke video motion visual bawaan", err);
+            floatingRegisterBtn.classList.add('hidden');
             showFallbackCelebration();
           });
         }
       } else {
         // Tampilkan video visual motion graphic bawaan jika belum ada file MP4 khusus
+        floatingRegisterBtn.classList.add('hidden');
         showFallbackCelebration();
       }
     }
