@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Launching SPMB SD Muhammadiyah Tanjung</title>
+  <title>Digital Hand Scanner Launching Ceremony</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Tone.js for procedural sci-fi sound effects -->
@@ -236,15 +236,8 @@
     </div>
   </div>
 
-  <!-- Launch Video Player Modal -->
+  <!-- Launch Video Player Modal (Layar Penuh Bersih Tanpa Tombol) -->
   <div id="videoModal" class="fixed inset-0 z-50 bg-black hidden flex flex-col items-center justify-center">
-    <!-- Close / Reset Launch Button (Top Right untuk Operator) -->
-    <div class="absolute top-6 right-6 z-50 flex items-center gap-3">
-      <button id="closeVideoBtn" class="px-4 py-2 rounded-lg bg-slate-900/80 border border-cyan-500/40 text-cyan-300 text-xs tracking-wider uppercase font-hud hover:bg-cyan-500/20 transition backdrop-blur-md">
-        ↺ Reset Ceremony
-      </button>
-    </div>
-
     <!-- Active Video Element / Motion Graphic -->
     <div class="w-full h-full relative flex items-center justify-center overflow-hidden">
       <!-- Real Video Element -->
@@ -278,18 +271,9 @@
             SPMB SD MUHAMMADIYAH TANJUNG
           </p>
 
-          <p class="font-hud text-base md:text-2xl text-amber-300 font-bold tracking-[0.25em] mb-10 glow-gold uppercase">
+          <p class="font-hud text-base md:text-2xl text-amber-300 font-bold tracking-[0.25em] mb-4 glow-gold uppercase">
             TAHUN AJARAN 2027/2028
           </p>
-
-          <div class="flex items-center gap-4">
-            <button id="replayAnimBtn" class="px-6 py-2.5 rounded-lg border border-cyan-500/50 bg-cyan-950/60 text-cyan-300 font-hud text-xs tracking-widest uppercase hover:bg-cyan-500/20 transition">
-              💥 Ledakkan Konfeti
-            </button>
-            <button id="backToScanBtn" class="px-6 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-hud text-xs tracking-widest uppercase hover:opacity-90 transition">
-              Kembali ke Scanner
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -1092,14 +1076,23 @@
       document.getElementById('settingsBtn').addEventListener('click', openSettings);
       document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
 
-      // Keyboard shortcut 'S' for settings
+      // Keyboard shortcuts: 'S' untuk settings, 'R' untuk Reset, 'Escape' untuk tutup settings / reset
       window.addEventListener('keydown', (e) => {
         if (e.key === 's' || e.key === 'S') {
           if (document.activeElement.tagName !== 'INPUT') {
             drawer.classList.contains('translate-x-full') ? openSettings() : closeSettings();
           }
         } else if (e.key === 'Escape') {
-          closeSettings();
+          if (!drawer.classList.contains('translate-x-full')) {
+            closeSettings();
+          } else if (state.isLaunched) {
+            resetCeremony();
+          }
+        } else if (e.key === 'r' || e.key === 'R') {
+          // Shortcut operator di belakang panggung untuk reset ulang tanpa tombol layar
+          if (document.activeElement.tagName !== 'INPUT') {
+            resetCeremony();
+          }
         }
       });
 
@@ -1181,10 +1174,13 @@
         checkAndProgress();
       });
 
-      // Reset ceremony buttons
-      document.getElementById('closeVideoBtn').addEventListener('click', resetCeremony);
-      document.getElementById('backToScanBtn').addEventListener('click', resetCeremony);
-      document.getElementById('replayAnimBtn').addEventListener('click', fireConfettiBlast);
+      // Safe event binding jika tombol sewaktu-waktu diaktifkan kembali
+      const closeBtn = document.getElementById('closeVideoBtn');
+      if (closeBtn) closeBtn.addEventListener('click', resetCeremony);
+      const backBtn = document.getElementById('backToScanBtn');
+      if (backBtn) backBtn.addEventListener('click', resetCeremony);
+      const replayBtn = document.getElementById('replayAnimBtn');
+      if (replayBtn) replayBtn.addEventListener('click', fireConfettiBlast);
     }
 
     function showToast(message) {
