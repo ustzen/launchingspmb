@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Hand Scanner Launching Ceremony</title>
+  <title>Launching SPMB SD Muhammadiyah Tanjung</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Tone.js for procedural sci-fi sound effects -->
@@ -419,81 +419,92 @@
       intervalId: null
     };
 
-    // Audio Engine using Tone.js (Pre-warmed & Zero-latency Synthesizers)
+    // ================================================================
+    // AUDIO ENGINE — dirombak total: MINIM instrumen, CLEAN sinyal (anti
+    // pecah/distorsi), tapi tetap MERIAH di momen puncak peresmian.
+    //
+    // Prinsip perombakan:
+    //   1) Sumber suara dipakai ulang seminim mungkin: satu synth serbaguna
+    //      (blip sentuhan + ketukan countdown), satu kick tipis untuk
+    //      hentakan countdown, dan untuk momen puncak peresmian hanya SATU
+    //      sumber suara — satu noise synth yang disapu lewat satu filter
+    //      untuk kesan ledakan meriah — tidak ada synth lain yang ditumpuk
+    //      bersamaan supaya sinyal tidak pernah pecah.
+    //   2) Satu master bus tunggal: Gain (headroom) -> Compressor (ratakan
+    //      puncak) -> Limiter (batas keras anti-pecah). Sinyal tidak pernah
+    //      menumpuk melewati 0dB sebelum sampai limiter.
+    //   3) Waveform lembut (sine/triangle), polifoni dibatasi ketat, dan
+    //      volume instrumen dibuat TETAP (tidak dinaik-turunkan on-the-fly)
+    //      supaya sentuhan multi-tangan tidak pernah memicu klik/pecah.
+    // ================================================================
     const AudioEngine = {
       initialized: false,
+      masterGain: null,
+      compressor: null,
+      limiter: null,
+      masterBus: null,
       droneOsc: null,
       droneGain: null,
-      beepSynth: null,
-      countdownSynth: null,
-      countdownKick: null,
-      // Celebration Instruments (Pre-cached)
-      deepImpact: null,
-      bellSynth: null,
-      brassSynth: null,
-      popNoise: null,
-      sparkleSynth: null,
+      // Synth serbaguna: blip sentuhan + ketukan countdown
+      blipSynth: null,
+      // Kick tipis untuk hentakan countdown
+      kick: null,
+      // Ledakan peresmian — SATU suara saja (bukan lapisan-lapisan)
+      explosionReverb: null,
+      explosionNoiseFilter: null,
+      explosionNoise: null,
 
       init() {
         if (this.initialized) return;
         try {
-          // 1. Continuous charging drone
-          this.droneGain = new Tone.Gain(0).toDestination();
-          this.droneOsc = new Tone.Oscillator(110, "sawtooth").connect(this.droneGain).start();
+          // Master Bus: Gain -> Compressor -> Limiter -> Speaker
+          this.masterGain = new Tone.Gain(0.85);
+          this.compressor = new Tone.Compressor({
+            threshold: -30,
+            ratio: 6,
+            attack: 0.001,
+            release: 0.25
+          });
+          this.limiter = new Tone.Limiter(-4).toDestination();
+          this.masterBus = this.masterGain;
+          this.masterGain.connect(this.compressor);
+          this.compressor.connect(this.limiter);
 
-          // 2. Biometric blip synth
-          this.beepSynth = new Tone.PolySynth(Tone.Synth, {
+          // Drone lembut saat progress bar terisi
+          this.droneGain = new Tone.Gain(0).connect(this.masterBus);
+          this.droneOsc = new Tone.Oscillator(120, "sine").connect(this.droneGain).start();
+
+          // Synth serbaguna — dipakai ulang untuk blip & countdown, polifoni
+          // dibatasi ketat karena bisa terpicu beberapa tangan sekaligus.
+          this.blipSynth = new Tone.PolySynth(Tone.Synth, {
+            maxPolyphony: 4,
             oscillator: { type: "triangle" },
-            envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.1 }
-          }).toDestination();
-          this.beepSynth.volume.value = -6;
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+          }).connect(this.masterBus);
+          this.blipSynth.volume.value = -12;
 
-          // 3. Countdown pre-warmed instruments
-          this.countdownSynth = new Tone.Synth({
+          // Kick tipis untuk hentakan ketukan countdown
+          this.kick = new Tone.MembraneSynth({
+            pitchDecay: 0.04,
+            octaves: 3,
             oscillator: { type: "sine" },
-            envelope: { attack: 0.005, decay: 0.15, sustain: 0, release: 0.2 }
-          }).toDestination();
+            envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.3 }
+          }).connect(this.masterBus);
+          this.kick.volume.value = -12;
 
-          this.countdownKick = new Tone.MembraneSynth({
-            pitchDecay: 0.05,
-            octaves: 4,
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.4 }
-          }).toDestination();
-          this.countdownKick.volume.value = 2;
-
-          // 4. Celebration Pre-cached instruments (menghilangkan lag/alokasi memori on-the-fly)
-          this.deepImpact = new Tone.MembraneSynth({
-            pitchDecay: 0.15,
-            octaves: 7,
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.001, decay: 3.0, sustain: 0, release: 3.2 }
-          }).toDestination();
-          this.deepImpact.volume.value = 8;
-
-          this.bellSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sine" },
-            envelope: { attack: 0.01, decay: 1.2, sustain: 0.1, release: 1.5 }
-          }).toDestination();
-          this.bellSynth.volume.value = 3;
-
-          this.brassSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sawtooth" },
-            envelope: { attack: 0.14, decay: 2.4, sustain: 0.65, release: 2.8 }
-          }).toDestination();
-          this.brassSynth.volume.value = 4;
-
-          this.popNoise = new Tone.NoiseSynth({
+          // Ledakan Peresmian — SATU sumber suara saja (bukan beberapa synth
+          // ditumpuk), supaya sinyal tidak pernah menumpuk dan pecah/klip.
+          // Pakai pink noise (lebih "bulat"/tidak berdesis tajam dibanding
+          // white noise) dengan attack yang tidak instan, volume diberi
+          // banyak headroom, lalu dibentuk satu filter yang disapu turun
+          // secara perlahan untuk kesan "ledakan meriah" yang panjang & bersih.
+          this.explosionReverb = new Tone.Reverb({ decay: 7, preDelay: 0.01, wet: 0.28 }).connect(this.masterBus);
+          this.explosionNoiseFilter = new Tone.Filter({ frequency: 3000, type: "lowpass", rolloff: -24, Q: 0.6 }).connect(this.explosionReverb);
+          this.explosionNoise = new Tone.NoiseSynth({
             noise: { type: "pink" },
-            envelope: { attack: 0.002, decay: 0.22, sustain: 0 }
-          }).toDestination();
-          this.popNoise.volume.value = 2;
-
-          this.sparkleSynth = new Tone.Synth({
-            oscillator: { type: "triangle" },
-            envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.15 }
-          }).toDestination();
-          this.sparkleSynth.volume.value = -1;
+            envelope: { attack: 0.02, decay: 5.5, sustain: 0.05, release: 6.5 }
+          }).connect(this.explosionNoiseFilter);
+          this.explosionNoise.volume.value = -13;
 
           this.initialized = true;
         } catch (e) {
@@ -511,22 +522,24 @@
         } catch(e){}
       },
 
+      // Suara #1: Blip biometrik saat tangan menyentuh pad
       playTouchBlip() {
         if (!state.soundEnabled) return;
         this.ensureReady();
         try {
-          this.beepSynth.triggerAttackRelease(["E5", "B5"], "16n");
+          this.blipSynth.triggerAttackRelease("A5", "16n");
         } catch(e){}
       },
 
+      // Suara #2: Drone berkelanjutan saat progress bar terisi
       setDroneProgress(fraction) {
         if (!state.soundEnabled || !this.initialized) return;
         try {
           if (fraction > 0) {
-            this.droneGain.gain.rampTo(Math.min(0.25, 0.05 + fraction * 0.2), 0.05);
-            this.droneOsc.frequency.rampTo(110 + (fraction * 370), 0.05);
+            this.droneGain.gain.rampTo(Math.min(0.1, 0.03 + fraction * 0.08), 0.08);
+            this.droneOsc.frequency.rampTo(120 + (fraction * 180), 0.08);
           } else {
-            this.droneGain.gain.rampTo(0, 0.1);
+            this.droneGain.gain.rampTo(0, 0.15);
           }
         } catch(e){}
       },
@@ -534,68 +547,44 @@
       stopDrone() {
         if (!this.initialized) return;
         try {
-          this.droneGain.gain.rampTo(0, 0.08);
+          this.droneGain.gain.rampTo(0, 0.12);
         } catch(e){}
       },
 
-      // Efek ketukan countdown dari 10 ke 1 tanpa alokasi baru
+      // Suara #3: Ketukan countdown dari 10 ke 1 — volume tetap, hanya nada
+      // (pitch) yang naik mendekati angka 1, tanpa lonjakan gain apa pun.
       playCountdownBeep(currentNum) {
         if (!state.soundEnabled) return;
         this.ensureReady();
         try {
-          if (currentNum <= 3) {
-            this.countdownSynth.volume.value = 5;
-            this.countdownSynth.triggerAttackRelease("C6", "16n");
-          } else if (currentNum <= 5) {
-            this.countdownSynth.volume.value = 2;
-            this.countdownSynth.triggerAttackRelease("A5", "16n");
-          } else {
-            this.countdownSynth.volume.value = -1;
-            this.countdownSynth.triggerAttackRelease("E5", "16n");
-          }
-          this.countdownKick.triggerAttackRelease("C2", "16n");
+          let note = "D5";
+          if (currentNum <= 3) note = "A5";
+          else if (currentNum <= 5) note = "F5";
+          this.blipSynth.triggerAttackRelease(note, "16n");
+          this.kick.triggerAttackRelease("C2", "16n");
         } catch(e){}
       },
 
-      // Efek Suara Peresmian Megah, WOW & Bikin Terharu (Zero-lag dengan pre-created synths)
+      // Suara #4 (terakhir): Efek Suara Peresmian — SATU suara saja, tidak
+      // ada synth lain ditumpuk bersamaan, supaya sinyal tidak pernah
+      // menumpuk dan pecah. Satu noise synth disapu lewat satu filter dari
+      // terang ke redup untuk kesan "ledakan meriah" bernada turun, dengan
+      // ekor (tail) yang jauh lebih panjang lewat envelope release & reverb.
       playLaunchExplosion() {
         if (!state.soundEnabled) return;
         this.ensureReady();
         try {
           const now = Tone.now();
 
-          // 1. Cinematic Grand Sub-Boom
-          this.deepImpact.triggerAttackRelease("B0", "1n", now);
+          // Sapuan filter dari terang -> redup secara perlahan, memberi
+          // kesan ledakan yang mereda dengan halus (bukan potongan tiba-tiba)
+          this.explosionNoiseFilter.frequency.cancelScheduledValues(now);
+          this.explosionNoiseFilter.frequency.setValueAtTime(3000, now);
+          this.explosionNoiseFilter.frequency.exponentialRampToValueAtTime(90, now + 6.5);
 
-          // 2. Kilauan Kristal Stardust Shimmer
-          const shimmerNotes = [
-            { note: "C5", delay: 0.00 },
-            { note: "E5", delay: 0.06 },
-            { note: "G5", delay: 0.12 },
-            { note: "B5", delay: 0.18 },
-            { note: "C6", delay: 0.24 },
-            { note: "D6", delay: 0.30 },
-            { note: "E6", delay: 0.36 },
-            { note: "G6", delay: 0.44 },
-            { note: "C7", delay: 0.54 },
-            { note: "E7", delay: 0.66 }
-          ];
-          shimmerNotes.forEach(item => {
-            this.bellSynth.triggerAttackRelease(item.note, "4n", now + item.delay);
-          });
-
-          // 3. Grand Orchestral Fanfare (Megah & Bangga)
-          this.brassSynth.triggerAttackRelease(["C3", "G3", "C4", "E4", "G4", "D5"], "2n", now + 0.1);
-          this.brassSynth.triggerAttackRelease(["F2", "A3", "C4", "E4", "A4", "C5"], "2n", now + 1.2);
-          this.brassSynth.triggerAttackRelease(["G2", "D3", "G3", "B3", "D4", "G5"], "1n", now + 2.3);
-
-          // 4. Kembang Api Panggung Bertubi-tubi
-          [0.35, 0.7, 1.05, 1.4, 1.8, 2.2, 2.6].forEach((timeOffset, idx) => {
-            try {
-              this.popNoise.triggerAttackRelease("16n", now + timeOffset);
-              this.sparkleSynth.triggerAttackRelease(idx % 2 === 0 ? "E6" : "G6", "32n", now + timeOffset + 0.02);
-            } catch(e){}
-          });
+          // Satu-satunya sumber suara: satu noise synth, satu kali picu,
+          // durasi panjang ("1n" = not bar penuh) sesuai envelope di atas
+          this.explosionNoise.triggerAttackRelease("1n", now);
 
         } catch(e){
           console.warn("Celebration sound synthesis error:", e);
